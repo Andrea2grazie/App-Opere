@@ -1,7 +1,8 @@
-VERSIONE 4 - MACROSTRUTTURE EDITABILI
+VERSIONE 5 - STRUTTURA PULITA
 
-Prima di caricare la nuova app, esegui in Supabase SQL Editor il file:
-schema_macrostrutture.sql
+Prima cosa:
+1. Vai su Supabase > SQL Editor.
+2. Incolla ed esegui schema_migrazione_v5.sql.
 
 Poi carica/sostituisci su GitHub:
 - index.html
@@ -11,9 +12,10 @@ Poi carica/sostituisci su GitHub:
 - manifest.json
 - sw.js
 
-Novità:
-- puoi aggiungere macrostrutture dalla Home;
-- puoi modificarle;
-- puoi eliminarle;
-- ogni macrostruttura contiene voci gestibili come Opere/Manutenzioni/Urbanistica;
-- autosalvataggio, offline e sync restano attivi.
+Questa versione:
+- conserva le voci già inserite nella tabella voci;
+- ricostruisce le macrostrutture mancanti da Supabase;
+- mostra i conteggi reali leggendo la tabella voci;
+- permette di creare/modificare/eliminare macrostrutture;
+- permette di aggiungere/modificare/eliminare voci dentro ogni macrostruttura;
+- mantiene autosalvataggio, offline e sincronizzazione.

@@ -7,11 +7,11 @@
   <meta name="apple-mobile-web-app-title" content="Cabina Regia">
   <title>Cabina di Regia</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header>
-  <div>🏗️ Cabina di Regia</div>
+  <div class="brand">🏗️ Cabina di Regia</div>
   <div id="syncStatus">Caricamento...</div>
 </header>
 
@@ -21,15 +21,15 @@
   <div class="card">
     <h3>➕ Nuova macrostruttura</h3>
     <label>Nome</label>
-    <input id="newMacroName" placeholder="Es. Verde pubblico, Scuole, Sport">
+    <input id="newMacroName" placeholder="Es. Bandi, Scuole, Sport, Verde pubblico">
     <label>Icona</label>
-    <input id="newMacroIcon" placeholder="Es. 🌳, 🏫, ⚽">
+    <input id="newMacroIcon" placeholder="Es. 📁, 🏫, ⚽, 🌳">
     <button onclick="createMacro()">Aggiungi macrostruttura</button>
   </div>
 
   <div class="card">
     <h3>⚙️ Applicazione</h3>
-    <p class="hint">Usa questo pulsante dopo aver caricato una nuova versione su GitHub.</p>
+    <p class="hint">Dopo aver caricato una nuova versione su GitHub, premi qui.</p>
     <button onclick="forceAppUpdate()">Aggiorna applicazione</button>
   </div>
 </section>
@@ -46,7 +46,7 @@
 
   <button onclick="saveMacroEdit()">Salva macrostruttura</button>
   <button onclick="deleteMacro()" class="danger">Elimina macrostruttura</button>
-  <p class="hint">Se elimini una macrostruttura, vengono eliminate anche le voci al suo interno.</p>
+  <p class="hint">Se elimini una macrostruttura, vengono eliminate anche le voci contenute.</p>
 </section>
 
 <section id="listPage" class="page">
@@ -60,7 +60,7 @@
 <section id="formPage" class="page">
   <button onclick="backToList()" class="secondary">← Indietro</button>
   <h2 id="formTitle"></h2>
-  <p class="hint">Le modifiche vengono salvate automaticamente. Se sei offline, verranno sincronizzate appena torna la connessione.</p>
+  <p class="hint">Le modifiche vengono salvate automaticamente. Offline vengono messe in coda e sincronizzate appena torna internet.</p>
 
   <label>Nome</label>
   <input id="nome" data-field="nome">
@@ -86,11 +86,11 @@
   <label>Note</label>
   <textarea id="note" data-field="note"></textarea>
 
-  <button id="deleteBtn" onclick="deleteItem()" class="danger">Elimina</button>
+  <button id="deleteBtn" onclick="deleteItem()" class="danger">Elimina voce</button>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

@@ -1,11 +1,12 @@
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const LOCAL_ITEMS = "appregia_items_cache_v4";
-const LOCAL_MACROS = "appregia_macro_cache_v4";
-const LOCAL_QUEUE = "appregia_sync_queue_v4";
-const LOCAL_BACKUPS = "appregia_backups_v4";
+const LOCAL_ITEMS = "appregia_items_cache_v5";
+const LOCAL_MACROS = "appregia_macro_cache_v5";
+const LOCAL_QUEUE = "appregia_sync_queue_v5";
+const LOCAL_BACKUPS = "appregia_backups_v5";
 
 let macros = [];
+let allItems = [];
 let currentMacro = null;
 let currentSection = "";
 let currentItems = [];
@@ -15,20 +16,17 @@ let autosaveTimer = null;
 let syncing = false;
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./sw.js?v=4").catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=5").catch(()=>{});
 }
 
-function uid(){
-  return crypto.randomUUID ? crypto.randomUUID() : "local_" + Date.now() + "_" + Math.random().toString(16).slice(2);
-}
-function setStatus(text){ document.getElementById("syncStatus").textContent = text; }
-
-function getCache(){ return JSON.parse(localStorage.getItem(LOCAL_ITEMS) || "[]"); }
-function setCache(items){ localStorage.setItem(LOCAL_ITEMS, JSON.stringify(items)); }
-function getMacroCache(){ return JSON.parse(localStorage.getItem(LOCAL_MACROS) || "[]"); }
-function setMacroCache(items){ localStorage.setItem(LOCAL_MACROS, JSON.stringify(items)); }
-function getQueue(){ return JSON.parse(localStorage.getItem(LOCAL_QUEUE) || "[]"); }
-function setQueue(q){ localStorage.setItem(LOCAL_QUEUE, JSON.stringify(q)); }
+function uid(){return crypto.randomUUID ? crypto.randomUUID() : "local_" + Date.now() + "_" + Math.random().toString(16).slice(2)}
+function setStatus(text){document.getElementById("syncStatus").textContent = text}
+function getItems(){return JSON.parse(localStorage.getItem(LOCAL_ITEMS) || "[]")}
+function setItems(items){localStorage.setItem(LOCAL_ITEMS, JSON.stringify(items))}
+function getMacros(){return JSON.parse(localStorage.getItem(LOCAL_MACROS) || "[]")}
+function setMacros(items){localStorage.setItem(LOCAL_MACROS, JSON.stringify(items))}
+function getQueue(){return JSON.parse(localStorage.getItem(LOCAL_QUEUE) || "[]")}
+function setQueue(q){localStorage.setItem(LOCAL_QUEUE, JSON.stringify(q))}
 
 function showPage(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -38,58 +36,50 @@ function showPage(id){
 }
 
 async function init(){
-  macros = getMacroCache();
+  macros = getMacros();
+  allItems = getItems();
   renderMacros();
 
   if(navigator.onLine){
     try{
       setStatus("🔄 Sincronizzazione...");
       await syncQueue();
-      await loadMacrosOnline();
+      await loadAllOnline();
       setStatus("🟢 Sincronizzato");
     }catch(e){
       setStatus("🟡 Cache locale");
-      if(!macros.length) seedDefaultMacros();
     }
   }else{
     setStatus("🟡 Offline");
-    if(!macros.length) seedDefaultMacros();
   }
   renderMacros();
 }
 
-function seedDefaultMacros(){
-  macros = [
-    {id:"opere", nome:"Opere", icona:"🏗️", ordine:1},
-    {id:"manutenzioni", nome:"Manutenzioni", icona:"🔧", ordine:2},
-    {id:"urbanistica", nome:"Urbanistica", icona:"📐", ordine:3}
-  ];
-  setMacroCache(macros);
-}
+async function loadAllOnline(){
+  const {data: macroData, error: macroError} = await db.from("macrostrutture").select("*").order("ordine",{ascending:true});
+  if(macroError) throw macroError;
 
-async function loadMacrosOnline(){
-  const { data, error } = await db.from("macrostrutture").select("*").order("ordine", { ascending:true });
-  if(error) throw error;
-  if(!data || !data.length){
-    seedDefaultMacros();
-    for(const m of macros) queueMacroSave(m);
-    await syncQueue();
-  }else{
-    macros = data;
-    setMacroCache(macros);
-  }
+  const {data: itemData, error: itemError} = await db.from("voci").select("*").order("created_at",{ascending:false});
+  if(itemError) throw itemError;
+
+  macros = macroData || [];
+  allItems = itemData || [];
+  setMacros(macros);
+  setItems(allItems);
 }
 
 function renderMacros(){
   const box = document.getElementById("macroList");
-  const localMacros = macros.length ? macros : getMacroCache();
+  const localMacros = macros.length ? macros : getMacros();
+  const localItems = allItems.length ? allItems : getItems();
+
   if(!localMacros.length){
     box.innerHTML = "<div class='card'>Nessuna macrostruttura. Creane una dal modulo qui sotto.</div>";
     return;
   }
-  const allItems = getCache();
+
   box.innerHTML = localMacros.map(m => {
-    const count = allItems.filter(x => x.sezione === m.id && !x._deleted).length;
+    const count = localItems.filter(x => x.sezione === m.id).length;
     return `<div class="tile" onclick="openSection('${m.id}')">
       <div class="tileTop">
         <div>
@@ -105,10 +95,9 @@ function renderMacros(){
 
 function createMacro(){
   const nome = newMacroName.value.trim();
-  if(!nome){ alert("Inserisci il nome della macrostruttura."); return; }
-  const id = uid();
+  if(!nome){alert("Inserisci il nome della macrostruttura.");return}
   const macro = {
-    id,
+    id: uid(),
     nome,
     icona: newMacroIcon.value.trim() || "📁",
     ordine: macros.length + 1,
@@ -116,7 +105,7 @@ function createMacro(){
     updated_at: new Date().toISOString()
   };
   macros.push(macro);
-  setMacroCache(macros);
+  setMacros(macros);
   queueMacroSave(macro);
   newMacroName.value = "";
   newMacroIcon.value = "";
@@ -134,34 +123,25 @@ function openMacroEdit(){
 function saveMacroEdit(){
   const idx = macros.findIndex(m => m.id === editingMacroId);
   if(idx < 0) return;
-  macros[idx] = {
-    ...macros[idx],
-    nome: editMacroName.value.trim() || "Senza nome",
-    icona: editMacroIcon.value.trim() || "📁",
-    updated_at: new Date().toISOString()
-  };
+  macros[idx] = {...macros[idx], nome: editMacroName.value.trim() || "Senza nome", icona: editMacroIcon.value.trim() || "📁", updated_at: new Date().toISOString()};
   currentMacro = macros[idx];
-  setMacroCache(macros);
+  setMacros(macros);
   queueMacroSave(macros[idx]);
   openSection(currentMacro.id);
 }
 
 async function deleteMacro(){
   if(!currentMacro) return;
-  if(!confirm("Eliminare questa macrostruttura e tutte le voci al suo interno?")) return;
-
+  if(!confirm("Eliminare questa macrostruttura e tutte le voci contenute?")) return;
   const id = currentMacro.id;
   macros = macros.filter(m => m.id !== id);
-  setMacroCache(macros);
-
-  let items = getCache().filter(x => x.sezione !== id);
-  setCache(items);
-
+  allItems = allItems.filter(x => x.sezione !== id);
+  setMacros(macros);
+  setItems(allItems);
   const q = getQueue();
   q.push({type:"delete_macro", id});
   setQueue(q);
   if(navigator.onLine) await syncQueue();
-
   currentMacro = null;
   currentSection = "";
   showPage("home");
@@ -169,28 +149,27 @@ async function deleteMacro(){
 
 async function openSection(sectionId){
   currentSection = sectionId;
-  currentMacro = macros.find(m => m.id === sectionId) || getMacroCache().find(m => m.id === sectionId);
+  currentMacro = macros.find(m => m.id === sectionId) || getMacros().find(m => m.id === sectionId);
   document.getElementById("listTitle").textContent = currentMacro ? `${currentMacro.icona || "📁"} ${currentMacro.nome}` : "Sezione";
   showPage("listPage");
-  await loadItems();
+  await loadSectionItems();
 }
 
-async function loadItems(){
+async function loadSectionItems(){
   const box = document.getElementById("items");
   box.innerHTML = "<div class='card'>Caricamento...</div>";
 
-  const cached = getCache().filter(x => x.sezione === currentSection && !x._deleted);
-  currentItems = cached;
+  currentItems = allItems.filter(x => x.sezione === currentSection);
   renderList();
 
   if(navigator.onLine){
     try{
       setStatus("🔄 Sincronizzazione...");
       await syncQueue();
-      const { data, error } = await db.from("voci").select("*").eq("sezione", currentSection).order("created_at", { ascending:false });
+      const {data, error} = await db.from("voci").select("*").eq("sezione", currentSection).order("created_at",{ascending:false});
       if(error) throw error;
-      const allOther = getCache().filter(x => x.sezione !== currentSection);
-      setCache([...allOther, ...(data || [])]);
+      allItems = [...allItems.filter(x => x.sezione !== currentSection), ...(data || [])];
+      setItems(allItems);
       currentItems = data || [];
       renderList();
       autoBackup();
@@ -222,7 +201,7 @@ function renderList(){
 
 function newItem(){
   editingId = uid();
-  const item = {id: editingId,sezione: currentSection,nome: "",tipo: "",stato: "Da avviare",avanzamento: 0,prossima: "",note: "",created_at: new Date().toISOString(),updated_at: new Date().toISOString(),_local: true};
+  const item = {id: editingId,sezione: currentSection,nome:"",tipo:"",stato:"Da avviare",avanzamento:0,prossima:"",note:"",created_at:new Date().toISOString(),updated_at:new Date().toISOString(),_local:true};
   upsertLocal(item);
   fillForm(item);
   document.getElementById("formTitle").textContent = "Nuova voce";
@@ -232,7 +211,7 @@ function newItem(){
 }
 
 function editExisting(id){
-  const item = getCache().find(x => x.id === id);
+  const item = allItems.find(x => x.id === id) || getItems().find(x => x.id === id);
   if(!item) return;
   editingId = id;
   fillForm(item);
@@ -251,15 +230,14 @@ function fillForm(item){
 }
 
 function collectForm(){
-  return {id: editingId,sezione: currentSection,nome: nome.value.trim(),tipo: tipo.value.trim(),stato: stato.value,avanzamento: Math.max(0, Math.min(100, Number(avanzamento.value || 0))),prossima: prossima.value.trim(),note: note.value.trim(),updated_at: new Date().toISOString()};
+  return {id: editingId,sezione: currentSection,nome:nome.value.trim(),tipo:tipo.value.trim(),stato:stato.value,avanzamento:Math.max(0,Math.min(100,Number(avanzamento.value || 0))),prossima:prossima.value.trim(),note:note.value.trim(),updated_at:new Date().toISOString()};
 }
 
 function upsertLocal(item){
-  const items = getCache();
-  const idx = items.findIndex(x => x.id === item.id);
-  if(idx >= 0) items[idx] = {...items[idx], ...item};
-  else items.unshift(item);
-  setCache(items);
+  const idx = allItems.findIndex(x => x.id === item.id);
+  if(idx >= 0) allItems[idx] = {...allItems[idx], ...item};
+  else allItems.unshift(item);
+  setItems(allItems);
 }
 
 function queueSave(item){
@@ -287,6 +265,7 @@ function scheduleAutosave(){
     if(!item.nome) item.nome = "Senza nome";
     upsertLocal(item);
     queueSave(item);
+    currentItems = allItems.filter(x => x.sezione === currentSection);
     autoBackup();
   }, 600);
 }
@@ -304,25 +283,24 @@ async function syncQueue(){
 
       if(op.type === "upsert"){
         const clean = {...op.item};
-        delete clean._local; delete clean._deleted;
-        const { error } = await db.from("voci").upsert(clean, { onConflict:"id" });
+        delete clean._local;
+        const {error} = await db.from("voci").upsert(clean, {onConflict:"id"});
         if(error) throw error;
       }
 
       if(op.type === "delete"){
-        const { error } = await db.from("voci").delete().eq("id", op.id);
+        const {error} = await db.from("voci").delete().eq("id", op.id);
         if(error) throw error;
       }
 
       if(op.type === "upsert_macro"){
-        const clean = {...op.item};
-        const { error } = await db.from("macrostrutture").upsert(clean, { onConflict:"id" });
+        const {error} = await db.from("macrostrutture").upsert(op.item, {onConflict:"id"});
         if(error) throw error;
       }
 
       if(op.type === "delete_macro"){
         await db.from("voci").delete().eq("sezione", op.id);
-        const { error } = await db.from("macrostrutture").delete().eq("id", op.id);
+        const {error} = await db.from("macrostrutture").delete().eq("id", op.id);
         if(error) throw error;
       }
 
@@ -340,8 +318,8 @@ async function syncQueue(){
 async function deleteItem(){
   if(!editingId) return;
   if(!confirm("Eliminare questa voce?")) return;
-  let items = getCache().filter(x => x.id !== editingId);
-  setCache(items);
+  allItems = allItems.filter(x => x.id !== editingId);
+  setItems(allItems);
   const q = getQueue();
   q.push({type:"delete", id:editingId});
   setQueue(q);
@@ -358,8 +336,8 @@ function backToList(){
 
 function autoBackup(){
   const backups = JSON.parse(localStorage.getItem(LOCAL_BACKUPS) || "[]");
-  backups.unshift({date: new Date().toISOString(),macros:getMacroCache(),items: getCache()});
-  localStorage.setItem(LOCAL_BACKUPS, JSON.stringify(backups.slice(0, 20)));
+  backups.unshift({date:new Date().toISOString(),macros:getMacros(),items:getItems()});
+  localStorage.setItem(LOCAL_BACKUPS, JSON.stringify(backups.slice(0,20)));
 }
 
 async function forceAppUpdate(){
@@ -367,7 +345,7 @@ async function forceAppUpdate(){
   try{
     if("serviceWorker" in navigator){
       const regs = await navigator.serviceWorker.getRegistrations();
-      for(const reg of regs){ await reg.update(); }
+      for(const reg of regs){await reg.update()}
     }
     if("caches" in window){
       const keys = await caches.keys();
