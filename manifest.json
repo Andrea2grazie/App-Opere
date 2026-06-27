@@ -1,0 +1,9 @@
+{
+  "name": "Cabina di Regia",
+  "short_name": "Regia",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f7",
+  "theme_color": "#0b5cab",
+  "icons": []
+}

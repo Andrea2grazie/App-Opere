@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Cabina di Regia</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>🏗️ Cabina di Regia</header>
+
+<section id="home" class="page active">
+  <div class="tile" onclick="openSection('opere')"><h2>🏗️ Opere</h2><p>Lavori pubblici</p></div>
+  <div class="tile" onclick="openSection('manutenzioni')"><h2>🔧 Manutenzioni</h2><p>Interventi e segnalazioni</p></div>
+  <div class="tile" onclick="openSection('urbanistica')"><h2>📐 Urbanistica</h2><p>Piani e pratiche</p></div>
+</section>
+
+<section id="listPage" class="page">
+  <button onclick="showPage('home')" class="secondary">← Home</button>
+  <h2 id="listTitle"></h2>
+  <div id="items"></div>
+  <button class="fab" onclick="newItem()">+</button>
+</section>
+
+<section id="formPage" class="page">
+  <button onclick="cancelForm()" class="secondary">← Annulla</button>
+  <h2 id="formTitle"></h2>
+
+  <label>Nome</label>
+  <input id="nome">
+
+  <label>Tipo</label>
+  <input id="tipo">
+
+  <label>Stato</label>
+  <select id="stato">
+    <option>Da avviare</option>
+    <option>In corso</option>
+    <option>In attesa</option>
+    <option>Sospesa</option>
+    <option>Conclusa</option>
+  </select>
+
+  <label>Avanzamento %</label>
+  <input id="avanzamento" type="number" min="0" max="100">
+
+  <label>Prossima azione</label>
+  <textarea id="prossima"></textarea>
+
+  <label>Note</label>
+  <textarea id="note"></textarea>
+
+  <button onclick="saveItem()">Salva online</button>
+  <button id="deleteBtn" onclick="deleteItem()" class="danger">Elimina</button>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
