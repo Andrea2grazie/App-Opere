@@ -1,10 +1,10 @@
-const CACHE_NAME = "app-regia-cache-v3";
+const CACHE_NAME = "app-regia-cache-v4";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=3",
-  "./app.js?v=3",
-  "./config.js?v=3",
+  "./style.css?v=4",
+  "./app.js?v=4",
+  "./config.js?v=4",
   "./manifest.json"
 ];
 
@@ -24,7 +24,6 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   if(request.method !== "GET") return;
-
   event.respondWith(
     fetch(request).then(response => {
       const copy = response.clone();

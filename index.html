@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-title" content="Cabina Regia">
   <title>Cabina di Regia</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <header>
@@ -16,9 +16,16 @@
 </header>
 
 <section id="home" class="page active">
-  <div class="tile" onclick="openSection('opere')"><h2>🏗️ Opere</h2><p>Lavori pubblici</p></div>
-  <div class="tile" onclick="openSection('manutenzioni')"><h2>🔧 Manutenzioni</h2><p>Interventi e segnalazioni</p></div>
-  <div class="tile" onclick="openSection('urbanistica')"><h2>📐 Urbanistica</h2><p>Piani e pratiche</p></div>
+  <div id="macroList"></div>
+
+  <div class="card">
+    <h3>➕ Nuova macrostruttura</h3>
+    <label>Nome</label>
+    <input id="newMacroName" placeholder="Es. Verde pubblico, Scuole, Sport">
+    <label>Icona</label>
+    <input id="newMacroIcon" placeholder="Es. 🌳, 🏫, ⚽">
+    <button onclick="createMacro()">Aggiungi macrostruttura</button>
+  </div>
 
   <div class="card">
     <h3>⚙️ Applicazione</h3>
@@ -27,8 +34,24 @@
   </div>
 </section>
 
+<section id="macroEditPage" class="page">
+  <button onclick="showPage('home')" class="secondary">← Home</button>
+  <h2>Modifica macrostruttura</h2>
+
+  <label>Nome</label>
+  <input id="editMacroName">
+
+  <label>Icona</label>
+  <input id="editMacroIcon">
+
+  <button onclick="saveMacroEdit()">Salva macrostruttura</button>
+  <button onclick="deleteMacro()" class="danger">Elimina macrostruttura</button>
+  <p class="hint">Se elimini una macrostruttura, vengono eliminate anche le voci al suo interno.</p>
+</section>
+
 <section id="listPage" class="page">
   <button onclick="showPage('home')" class="secondary">← Home</button>
+  <button onclick="openMacroEdit()" class="secondary">⚙️ Modifica sezione</button>
   <h2 id="listTitle"></h2>
   <div id="items"></div>
   <button class="fab" onclick="newItem()">+</button>
@@ -67,7 +90,7 @@
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

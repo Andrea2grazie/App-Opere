@@ -1,6 +1,9 @@
-VERSIONE 3 - PULSANTE AGGIORNA APPLICAZIONE
+VERSIONE 4 - MACROSTRUTTURE EDITABILI
 
-Carica/sostituisci su GitHub:
+Prima di caricare la nuova app, esegui in Supabase SQL Editor il file:
+schema_macrostrutture.sql
+
+Poi carica/sostituisci su GitHub:
 - index.html
 - style.css
 - app.js
@@ -8,7 +11,9 @@ Carica/sostituisci su GitHub:
 - manifest.json
 - sw.js
 
-Nuovo:
-- pulsante "Aggiorna applicazione" nella Home;
-- service worker per cache/offline;
-- quando premi il pulsante, svuota la cache e ricarica l'ultima versione.
+Novità:
+- puoi aggiungere macrostrutture dalla Home;
+- puoi modificarle;
+- puoi eliminarle;
+- ogni macrostruttura contiene voci gestibili come Opere/Manutenzioni/Urbanistica;
+- autosalvataggio, offline e sync restano attivi.
